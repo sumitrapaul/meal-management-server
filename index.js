@@ -5,13 +5,7 @@ const jwt =require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port =process.env.PORT || 5000
 
-// app.use(cors())
-app.use(cors({
-    origin:[
-      'http://localhost:5173'
-    ],
-    credentials:true
-  }))
+app.use(cors())
 app.use(express.json())
 
 
@@ -32,57 +26,101 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const userCollection = client.db("meal-system").collection('users');
+    // const userCollection = client.db("meal-system").collection('users');
+    const mealCollection = client.db("meal-system").collection('addMeal');
 
-    //auth related
-    app.post('/jwt', async(req, res) =>{
-        const user = req.body
-        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h'})
-        // console.log(token)
-        res.send({ token })
+    //add meal
+    app.post('/addMeal', async(req, res) =>{
+      const newMeal = req.body
+      newMeal.date = new Date()
+      newMeal.likes = newMeal.likes || 0
+      newMeal.reviews = newMeal.reviews || 0
+
+      const result = await mealCollection.insertOne(newMeal)
+      res.send(result)
     })
 
-    const verifyToken = (req, res, next)=>{
-        console.log(req.headers)
-        if(!req.headers.authorization){
-            return res.status(401).send({message: 'forbidden'})
-        }
+    //all meals
+    app.get('/allMeals', async(req, res) =>{
+      const result = await mealCollection.find().toArray()
+      res.send(result)
+    })
 
-        const token = req.headers.authorization.split(' ')[1]
+    // //auth related
+    // app.post('/jwt', async(req, res) =>{
+    //     const user = req.body
+    //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h'})
+    //     // console.log('tik ttok token',token)
+    //     res.send({ token })
+    // })
+
+    // const verifyToken = (req, res, next)=>{
+    //     // console.log('inside',req.headers.authorization)
+    //     if(!req.headers.authorization){
+    //         return res.status(401).send({message: 'forbidden'})
+    //     }
+
+    //     const token = req.headers.authorization.split(' ')[1]
+    //     jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err, decoded) =>{
+    //          if(err){
+    //           return res.status(401).send({message: 'forbidden'})
+    //          }
+    //          req.decoded = decoded
+    //          next()
+    //     })
+    // }
+    // //users related
+    // app.get('/users', verifyToken, async(req, res) =>{
+    //     // console.log('head',req.headers)
+    //     const result=await userCollection.find().toArray()
+    //     res.send(result)
+    // })
+
+
+    // app.post('/users', async(req, res) => {
+    //     const user = req.body
+    //     const query ={email: user.email}
+    //     const existingUser =await userCollection.findOne(query)
+    //     if(existingUser){
+    //         return res.send({message: 'User already exists', insertedId: null})
+    //     }
+    //     const result=await userCollection.insertOne(user)
+    //     res.send(result)
+    // })
+
+
+    // app.get('/users/admin/:email', verifyToken, async(req,res) =>{
+    //   const email =req.params.email
+    //   console.log(email);
+    //   if(email !== req.decoded.email){
+    //     return res.status(403).send({message: 'unauthorized'})
+    //   }
+
+    //   const query = {email : email}
+    //   const user = await userCollection.findOne(query)
+    //   //  console.log('1d',user)
+    //   let admin = false;
+    //   if(user){
+    //     admin = user?.role == "admin"
+    //   }
+    //   // console.log('2d',user)
+    //   console.log(admin);
+    //   res.send({admin})
+
+    // })
     
-        // next()
-    }
-    //users related
-    app.get('/users', verifyToken, async(req, res) =>{
-        console.log(req.headers)
-        const result=await userCollection.find().toArray()
-        res.send(result)
-    })
-
-
-    app.post('/users', async(req, res) => {
-        const user = req.body
-        const query ={email: user.email}
-        const existingUser =await userCollection.findOne(query)
-        if(existingUser){
-            return res.send({message: 'User already exists', insertedId: null})
-        }
-        const result=await userCollection.insertOne(user)
-        res.send(result)
-    })
-    
-    //make admin role
-    app.patch('/users/admin/:id', async(req, res) =>{
-         const id = req.params.id
-         const filter = { _id: new ObjectId(id)}
-         const updatedDoc ={
-            $set:{
-                role: 'admin'
-            }
-         }
-         const result =await userCollection.updateOne(filter, updatedDoc)
-         res.send(result)
-    })
+    // //make admin role
+    // app.patch('/users/admin/:id', async(req, res) =>{
+    //      const id = req.params.id
+    //      const filter = { _id: new ObjectId(id)}
+    //      const updatedDoc ={
+    //         $set:{
+    //             role: 'admin'
+    //         }
+    //      }
+    //      const result =await userCollection.updateOne(filter, updatedDoc)
+    //      res.send(result)
+    // })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
