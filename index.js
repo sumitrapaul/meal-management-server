@@ -46,6 +46,15 @@ async function run() {
       res.send(result)
     })
 
+    //meal deatils
+    app.get('/mealDetails/_id', async(req, res) =>{
+      const mealId = req.params._id
+      const query = { _id : new ObjectId(mealId)}
+      const result = await mealCollection.findOne(query)
+      console.log(result)
+      res.send(result)
+    })
+
     // //auth related
     // app.post('/jwt', async(req, res) =>{
     //     const user = req.body
