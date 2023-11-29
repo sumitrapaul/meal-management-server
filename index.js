@@ -28,6 +28,7 @@ async function run() {
 
     // const userCollection = client.db("meal-system").collection('users');
     const mealCollection = client.db("meal-system").collection('addMeal');
+    const UpcomingMealCollection = client.db("meal-system").collection('addToUpcoming');
 
     //add meal
     app.post('/addMeal', async(req, res) =>{
@@ -39,10 +40,25 @@ async function run() {
       const result = await mealCollection.insertOne(newMeal)
       res.send(result)
     })
+    //add upcoming  meal
+    app.post('/addToUpcoming', async(req, res) =>{
+      const newUpcomingMeal = req.body
+      newUpcomingMeal.date = new Date()
+      newUpcomingMeal.likes = newUpcomingMeal.likes || 0
+      newUpcomingMeal.reviews = newUpcomingMeal.reviews || 0
+
+      const result = await UpcomingMealCollection.insertOne(newUpcomingMeal)
+      res.send(result)
+    })
 
     //all meals
     app.get('/allMeals', async(req, res) =>{
       const result = await mealCollection.find().toArray()
+      res.send(result)
+    })
+    //upcoming meals
+    app.get('/addToUpcoming', async(req, res) =>{
+      const result = await UpcomingMealCollection.find().toArray()
       res.send(result)
     })
 
