@@ -31,46 +31,7 @@ async function run() {
       .db("meal-system")
       .collection("addToUpcoming");
 
-    //add meal
-    app.post("/addMeal", async (req, res) => {
-      const newMeal = req.body;
-      newMeal.date = new Date();
-      newMeal.likes = newMeal.likes || 0;
-      newMeal.reviews = newMeal.reviews || 0;
-
-      const result = await mealCollection.insertOne(newMeal);
-      res.send(result);
-    });
-    //add upcoming  meal
-    app.post("/addToUpcoming", async (req, res) => {
-      const newUpcomingMeal = req.body;
-      newUpcomingMeal.date = new Date();
-      newUpcomingMeal.likes = newUpcomingMeal.likes || 0;
-      newUpcomingMeal.reviews = newUpcomingMeal.reviews || 0;
-
-      const result = await UpcomingMealCollection.insertOne(newUpcomingMeal);
-      res.send(result);
-    });
-
-    //all meals
-    app.get("/allMeals", async (req, res) => {
-      const result = await mealCollection.find().toArray();
-      res.send(result);
-    });
-    //upcoming meals
-    app.get("/addToUpcoming", async (req, res) => {
-      const result = await UpcomingMealCollection.find().toArray();
-      res.send(result);
-    });
-
-    //meal deatils
-    app.get("/mealDetails/_id", async (req, res) => {
-      const mealId = req.params._id;
-      const query = { _id: new ObjectId(mealId) };
-      const result = await mealCollection.findOne(query);
-      console.log(result);
-      res.send(result);
-    });
+   
 
     // //auth related
     app.post("/jwt", async (req, res) => {
@@ -174,6 +135,90 @@ async function run() {
 
       res.send({ admin });
     });
+
+
+     //add meal create
+     app.post("/addMeal", verifyToken, verifyAdmin, async (req, res) => {
+      const newMeal = req.body;
+      newMeal.date = new Date();
+      newMeal.likes = newMeal.likes || 0;
+      newMeal.reviews = newMeal.reviews || 0;
+
+      const result = await mealCollection.insertOne(newMeal);
+      res.send(result);
+    });
+    //add upcoming  meal create
+    app.post("/addToUpcoming", async (req, res) => {
+      const newUpcomingMeal = req.body;
+      newUpcomingMeal.date = new Date();
+      newUpcomingMeal.likes = newUpcomingMeal.likes || 0;
+      newUpcomingMeal.reviews = newUpcomingMeal.reviews || 0;
+
+      const result = await UpcomingMealCollection.insertOne(newUpcomingMeal);
+      res.send(result);
+    });
+
+    //all meals read
+    app.get("/allMeals", async (req, res) => {
+      const result = await mealCollection.find().toArray();
+      res.send(result);
+    });
+    //upcoming meals read
+    app.get("/addToUpcoming", async (req, res) => {
+      const result = await UpcomingMealCollection.find().toArray();
+      res.send(result);
+    });
+
+   
+    //meal deatils
+    app.get("/mealDetails/_id", async (req, res) => {
+      const mealId = req.params._id;
+      const query = { _id: new ObjectId(mealId) };
+      const result = await mealCollection.findOne(query);
+      console.log(result);
+      res.send(result);
+    });
+
+
+    app.get('/allMeals/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query ={ _id : new ObjectId(id)}
+      const result = await mealCollection.findOne(query)
+
+      res.send(result)
+    })
+    
+
+    //meals update
+    app.patch("/allMeals/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const item = req.body;
+      const id = req.params.id
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          title: item.title,
+          category: item.category,
+          ingredients: item.ingredients,
+          price: item.price,
+          image: item.image,
+        },
+      };
+      const result = await mealCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+
+     //all meals delete
+     app.delete("/allMeals/:id", verifyToken, verifyAdmin, async(req, res) =>{
+      console.log('delete route')
+      const id = req.params.id;
+      console.log(id)
+      const query = { _id : new ObjectId(id)}
+      const result = await mealCollection.deleteOne(query)
+      console.log(result)
+      res.send(result)
+    })
+
 
    
 
