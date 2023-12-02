@@ -27,6 +27,7 @@ async function run() {
 
     const userCollection = client.db("meal-system").collection("users");
     const mealCollection = client.db("meal-system").collection("addMeal");
+    const membershipCollection = client.db("meal-system").collection("member");
     const UpcomingMealCollection = client
       .db("meal-system")
       .collection("addToUpcoming");
@@ -79,7 +80,7 @@ async function run() {
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       // console.log('head',req.headers)
       const result = await userCollection.find().toArray();
-
+      console.log(result)
       res.send(result);
     });
 
@@ -101,6 +102,19 @@ async function run() {
       const query = { _id : new ObjectId(id)}
       const result = await userCollection.deleteOne(query)
       res.send(result)
+    })
+
+
+    //profile
+
+    app.get('/users/:email',verifyToken, async(req, res) =>{
+      const email = req.params.email;
+      console.log(email)
+      const query = { email: email };
+      console.log(query)
+      const result = await userCollection.find(query).toArray();
+      console.log(result)
+      res.send(result);
     })
 
 
@@ -218,6 +232,21 @@ async function run() {
       console.log(result)
       res.send(result)
     })
+
+
+    //member ship create
+    app.post("/members", async (req, res) => {
+      const newMember = req.body;
+      const result = await membershipCollection.insertOne(newMember);
+      res.send(result);
+    });
+
+      //membership read
+      app.get("/members", async (req, res) => {
+        const result = await membershipCollection.find().toArray();
+        
+        res.send(result);
+      });
 
 
    
