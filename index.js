@@ -2,13 +2,15 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
-
+console.log('kkkk',process.env.STRIPE_SECRET_KEY)
 app.use(cors());
 app.use(express.json());
 
-require("dotenv").config();
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ldrxrdq.mongodb.net/?retryWrites=true&w=majority`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -27,12 +29,10 @@ async function run() {
 
     const userCollection = client.db("meal-system").collection("users");
     const mealCollection = client.db("meal-system").collection("addMeal");
-    const membershipCollection = client.db("meal-system").collection("member");
+    const membershipCollection = client.db("meal-system").collection("members");
     const UpcomingMealCollection = client
       .db("meal-system")
       .collection("addToUpcoming");
-
-   
 
     // //auth related
     app.post("/jwt", async (req, res) => {
@@ -43,33 +43,31 @@ async function run() {
       // console.log('tik ttok token',token)
       res.send({ token });
     });
-     
 
     //middlewares
     const verifyToken = (req, res, next) => {
       // console.log('inside',req.headers.authorization)
-      if(!req.headers.authorization) {
+      if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized" });
       }
 
-      const token = req.headers.authorization.split(' ')[1];
+      const token = req.headers.authorization.split(" ")[1];
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if(err) {
+        if (err) {
           return res.status(401).send({ message: "unauthorized" });
         }
         req.decoded = decoded;
         next();
       });
     };
-   
 
     //admin verification
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
       const user = await userCollection.findOne(query);
-      const isAdmin = user?.role === 'admin';
-      if(!isAdmin) {
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
         return res.status(401).send({ message: "forbidden" });
       }
 
@@ -80,7 +78,7 @@ async function run() {
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       // console.log('head',req.headers)
       const result = await userCollection.find().toArray();
-      console.log(result)
+      console.log(result);
       res.send(result);
     });
 
@@ -97,46 +95,48 @@ async function run() {
     });
 
     //3
-    app.delete('/users/:id', verifyToken, verifyAdmin, async(req, res) =>{
+    app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const query = { _id : new ObjectId(id)}
-      const result = await userCollection.deleteOne(query)
-      res.send(result)
-    })
-
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
 
     //profile
 
-    app.get('/users/:email',verifyToken, async(req, res) =>{
+    app.get("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email)
+      console.log(email);
       const query = { email: email };
-      console.log(query)
+      console.log(query);
       const result = await userCollection.find(query).toArray();
-      console.log(result)
-      res.send(result);
-    })
-
-
-     //make admin role 4
-    app.patch("/users/admin/:id", verifyToken, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
-      const result = await userCollection.updateOne(filter, updatedDoc);
+      console.log(result);
       res.send(result);
     });
-    
+
+    //make admin role 4
+    app.patch(
+      "/users/admin/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await userCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
+    );
 
     //admin email check
     app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
 
-      if(email !== req.decoded.email) {
+      if (email !== req.decoded.email) {
         return res.status(403).send({ message: "forbidden" });
       }
 
@@ -150,9 +150,8 @@ async function run() {
       res.send({ admin });
     });
 
-
-     //add meal create
-     app.post("/addMeal", verifyToken, verifyAdmin, async (req, res) => {
+    //add meal create
+    app.post("/addMeal", verifyToken, verifyAdmin, async (req, res) => {
       const newMeal = req.body;
       newMeal.date = new Date();
       newMeal.likes = newMeal.likes || 0;
@@ -183,7 +182,6 @@ async function run() {
       res.send(result);
     });
 
-   
     //meal deatils
     app.get("/mealDetails/_id", async (req, res) => {
       const mealId = req.params._id;
@@ -193,20 +191,18 @@ async function run() {
       res.send(result);
     });
 
-
-    app.get('/allMeals/:id', async(req, res) =>{
+    app.get("/allMeals/:id", async (req, res) => {
       const id = req.params.id;
-      const query ={ _id : new ObjectId(id)}
-      const result = await mealCollection.findOne(query)
+      const query = { _id: new ObjectId(id) };
+      const result = await mealCollection.findOne(query);
 
-      res.send(result)
-    })
-    
+      res.send(result);
+    });
 
     //meals update
     app.patch("/allMeals/:id", verifyToken, verifyAdmin, async (req, res) => {
       const item = req.body;
-      const id = req.params.id
+      const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
@@ -221,35 +217,46 @@ async function run() {
       res.send(result);
     });
 
-
-     //all meals delete
-     app.delete("/allMeals/:id", verifyToken, verifyAdmin, async(req, res) =>{
-      console.log('delete route')
+    //all meals delete
+    app.delete("/allMeals/:id", verifyToken, verifyAdmin, async (req, res) => {
+      console.log("delete route");
       const id = req.params.id;
-      console.log(id)
-      const query = { _id : new ObjectId(id)}
-      const result = await mealCollection.deleteOne(query)
-      console.log(result)
-      res.send(result)
-    })
-
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await mealCollection.deleteOne(query);
+      console.log(result);
+      res.send(result);
+    });
 
     //member ship create
     app.post("/members", async (req, res) => {
       const newMember = req.body;
+      console.log(newMember);
       const result = await membershipCollection.insertOne(newMember);
       res.send(result);
     });
 
-      //membership read
-      app.get("/members", async (req, res) => {
-        const result = await membershipCollection.find().toArray();
-        
-        res.send(result);
+    //membership read
+    app.get("/members", async (req, res) => {
+      const result = await membershipCollection.find().toArray();
+
+      res.send(result);
+    });
+
+    //payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
       });
 
-
-   
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
