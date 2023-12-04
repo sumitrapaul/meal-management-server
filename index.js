@@ -29,7 +29,7 @@ async function run() {
     const userCollection = client.db("meal-system").collection("users");
     const mealCollection = client.db("meal-system").collection("addMeal");
     const membershipCollection = client.db("meal-system").collection("members");
-    const UpcomingMealCollection = client.db("meal-system").collection("addToUpcoming");
+    const upcomingMealCollection = client.db("meal-system").collection("addToUpcoming");
     const paymentCollection = client.db("meal-system").collection("payments");
     const requestCollection = client.db("meal-system").collection("requests");
 
@@ -77,7 +77,7 @@ async function run() {
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       // console.log('head',req.headers)
       const result = await userCollection.find().toArray();
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
@@ -166,7 +166,7 @@ async function run() {
       newUpcomingMeal.likes = newUpcomingMeal.likes || 0;
       newUpcomingMeal.reviews = newUpcomingMeal.reviews || 0;
 
-      const result = await UpcomingMealCollection.insertOne(newUpcomingMeal);
+      const result = await upcomingMealCollection.insertOne(newUpcomingMeal);
       res.send(result);
     });
 
@@ -175,9 +175,51 @@ async function run() {
       const result = await mealCollection.find().toArray();
       res.send(result);
     });
+
+    app.patch('/meals/:_id', async(req, res) =>{
+      const id = req.params._id
+      const filter ={ _id : new ObjectId(id)}
+      const updateStatus = { 
+        $inc: {
+          likes : 1
+        }
+      }
+
+      const result = await mealCollection.updateOne(filter, updateStatus)
+      // console.log(result)
+
+      res.send(result)
+    })
+
+
     //upcoming meals read
     app.get("/addToUpcoming", async (req, res) => {
-      const result = await UpcomingMealCollection.find().toArray();
+      const result = await upcomingMealCollection.find().sort({likes : -1}).toArray();
+      res.send(result);
+    });
+
+    app.patch('/upcoming/:_id', async(req, res) =>{
+      const id = req.params._id
+      const filter ={ _id : new ObjectId(id)}
+      const updateStatus = { 
+        $inc: {
+          likes : 1
+        }
+      }
+
+      const result = await upcomingMealCollection.updateOne(filter, updateStatus)
+      // console.log(result)
+
+      res.send(result)
+    })
+
+
+    app.delete("/upcoming/:_id", async (req, res) => {
+      const id = req.params._id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await upcomingMealCollection.deleteOne(query);
+      // console.log(result);
       res.send(result);
     });
 
@@ -186,7 +228,6 @@ async function run() {
       const mealId = req.params._id;
       const query = { _id: new ObjectId(mealId) };
       const result = await mealCollection.findOne(query);
-      // console.log(result);
       res.send(result);
     });
 
@@ -200,18 +241,19 @@ async function run() {
       const result = await requestCollection.find().toArray()
       res.send(result)
     })
+    app.get("/requests1/:id", async(req, res) =>{
+      const email =req.params.id;
+      console.log(email)
+      const result1 = await requestCollection.find().toArray()
+      // console.log(result1)
+      const result = result1.filter(result2 =>(
+        result2.email == email
+      ))
+      console.log(result1) 
+      console.log(result) 
+      res.send(result)
+    })
 
-
-    
-    app.get("/requests/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      console.log(email);
-      const query = { email: email };
-      console.log(query);
-      const result = await requestCollection.find(query).toArray();
-      console.log(result);
-      res.send(result);
-    });
 
     app.patch('/requests/serve/:_id', async(req, res) =>{
       const id = req.params._id
@@ -223,10 +265,19 @@ async function run() {
       }
 
       const result = await requestCollection.updateOne(filter, updateStatus)
-      console.log('payment info', result)
 
       res.send(result)
     })
+
+    
+    app.delete("/requests/:_id", async (req, res) => {
+      const id = req.params._id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await requestCollection.deleteOne(query);
+      // console.log(result);
+      res.send(result);
+    });
 
     app.get("/allMeals/:id", async (req, res) => {
       const id = req.params.id;
@@ -256,7 +307,6 @@ async function run() {
 
     //all meals delete
     app.delete("/allMeals/:id", verifyToken, verifyAdmin, async (req, res) => {
-      console.log("delete route");
       const id = req.params.id;
       // console.log(id);
       const query = { _id: new ObjectId(id) };
@@ -264,14 +314,6 @@ async function run() {
       // console.log(result);
       res.send(result);
     });
-
-    // //member ship create
-    // app.post("/members", async (req, res) => {
-    //   const newMember = req.body;
-    //   console.log(newMember);
-    //   const result = await membershipCollection.insertOne(newMember);
-    //   res.send(result);
-    // });
 
     // //membership read
     app.get("/members", async (req, res) => {
@@ -308,7 +350,7 @@ async function run() {
       const payment = req.body
 
       const paymentResult = await paymentCollection.insertOne(payment)
-      console.log('payment info', payment)
+      // console.log('payment info', payment)
 
       res.send(paymentResult)
 
@@ -319,7 +361,7 @@ async function run() {
       const email = req.params.email
       const badgeName = req.body;
       const query ={ email : email}
-       console.log(query)
+      //  console.log(query)
      
       const updateSet = { 
         $set: {
@@ -328,7 +370,7 @@ async function run() {
       }
 
       const result = await userCollection.updateOne(query, updateSet)
-      console.log('payment info', result)
+      // console.log('payment info', result)
 
       res.send(result)
       
