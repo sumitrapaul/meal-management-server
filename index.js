@@ -31,6 +31,7 @@ async function run() {
     const membershipCollection = client.db("meal-system").collection("members");
     const UpcomingMealCollection = client.db("meal-system").collection("addToUpcoming");
     const paymentCollection = client.db("meal-system").collection("payments");
+    const requestCollection = client.db("meal-system").collection("requests");
 
     // //auth related
     app.post("/jwt", async (req, res) => {
@@ -104,11 +105,11 @@ async function run() {
 
     app.get("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      // console.log(email);
       const query = { email: email };
-      console.log(query);
+      // console.log(query);
       const result = await userCollection.find(query).toArray();
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
@@ -181,13 +182,51 @@ async function run() {
     });
 
     //meal deatils
-    app.get("/mealDetails/_id", async (req, res) => {
+    app.get("/mealDetails/:_id", async (req, res) => {
       const mealId = req.params._id;
       const query = { _id: new ObjectId(mealId) };
       const result = await mealCollection.findOne(query);
+      // console.log(result);
+      res.send(result);
+    });
+
+    app.post('/requests', async(req, res) =>{
+      const newRequest = req.body;
+      const result = await requestCollection.insertOne(newRequest)
+      res.send(result)
+    })
+
+    app.get("/requests", async(req, res) =>{
+      const result = await requestCollection.find().toArray()
+      res.send(result)
+    })
+
+
+    
+    app.get("/requests/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const query = { email: email };
+      console.log(query);
+      const result = await requestCollection.find(query).toArray();
       console.log(result);
       res.send(result);
     });
+
+    app.patch('/requests/serve/:_id', async(req, res) =>{
+      const id = req.params._id
+      const filter ={ _id : new ObjectId(id)}
+      const updateStatus = { 
+        $set: {
+            status: "Delivered"
+        }
+      }
+
+      const result = await requestCollection.updateOne(filter, updateStatus)
+      console.log('payment info', result)
+
+      res.send(result)
+    })
 
     app.get("/allMeals/:id", async (req, res) => {
       const id = req.params.id;
@@ -219,10 +258,10 @@ async function run() {
     app.delete("/allMeals/:id", verifyToken, verifyAdmin, async (req, res) => {
       console.log("delete route");
       const id = req.params.id;
-      console.log(id);
+      // console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await mealCollection.deleteOne(query);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
@@ -267,9 +306,32 @@ async function run() {
 
     app.post('/payments', async(req, res) =>{
       const payment = req.body
+
       const paymentResult = await paymentCollection.insertOne(payment)
-      // console.log('payment info', payment)
+      console.log('payment info', payment)
+
       res.send(paymentResult)
+
+
+    })
+
+    app.patch('/updateBadge/:email', async(req, res) =>{
+      const email = req.params.email
+      const badgeName = req.body;
+      const query ={ email : email}
+       console.log(query)
+     
+      const updateSet = { 
+        $set: {
+            badge: badgeName.membershipName
+        }
+      }
+
+      const result = await userCollection.updateOne(query, updateSet)
+      console.log('payment info', result)
+
+      res.send(result)
+      
     })
 
     // Send a ping to confirm a successful connection
