@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userCollection = client.db("meal-system").collection("users");
     const mealCollection = client.db("meal-system").collection("addMeal");
@@ -249,8 +249,8 @@ async function run() {
       const result = result1.filter(result2 =>(
         result2.email == email
       ))
-      console.log(result1) 
-      console.log(result) 
+      // console.log(result1) 
+      // console.log(result) 
       res.send(result)
     })
 
@@ -315,9 +315,18 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/members", async (req, res) => {
+      const newMember = req.body;
+      
+
+      const result = await membershipCollection.insertOne(newMember);
+      res.send(result);
+    });
+
     // //membership read
     app.get("/members", async (req, res) => {
       const result = await membershipCollection.find().toArray();
+      console.log(result)
 
       res.send(result);
     });
